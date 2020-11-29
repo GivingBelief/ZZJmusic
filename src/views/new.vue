@@ -10,8 +10,9 @@
                     <span class="overflow_span">{{item.albumname}}</span>
                 </li>
             </ul>
-            <aplayer :music="videoUpload.music" :autoplay='autoplay' ref="player"></aplayer>
+
         </div>
+        <aplayer  :music="videoUpload.music" :autoplay='true' ref="player"></aplayer>
     </div>
 </template>
 
@@ -28,15 +29,15 @@
         },
         data() {
             return {
-                autoplay:true,
+                // autoplay:true,
                 music_data: [],
                 singer_name: '',
                 albummidArray: [], //最新图片数组
                 songmidArray: [],//最新歌曲源数组
                 playArray: [],//当前播放的歌曲数组
                 videoUpload: {
-                    theme: '#ffc0cb',
-                    autoplay: true,
+                    // theme: '#ffc0cb',
+                    // autoplay: true,
                     repeat: 'repeat-one', // 轮播模式。值可以是 'repeat-one'（单曲循环）'repeat-all'（列表循环）或者 'no-repeat'（不循环）。为了好记，还可以使用对应的 'music' 'list' 'none'
                     mini: false, // 迷你模式
                     float: true, // 浮动模式。你可以在页面上随意拖放你的播放器
@@ -82,7 +83,7 @@
                             // console.log(this.music_data[0].data.albummid );
                             this.videoUpload.music.title = JSON.parse(localStorage.getItem('songlist'))[0].data.albumname
                             this.videoUpload.music.author = this.singer_name
-                            this.videoUpload.music.pic = 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + this.music_data[0].data.albummid + '.jpg'
+                            this.videoUpload.music.pic = 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + JSON.parse(localStorage.getItem('songlist'))[0].data.albummid + '.jpg'
                             let url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=%7B%22req_0%22%3A%7B%22module%22%3A%22vkey.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%22358840384%22%2C%22songmid%22%3A%5B%22' + that.albummidArray[0].songmid + '%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%221443481947%22%2C%22loginflag%22%3A1%2C%22platform%22%3A%2220%22%7D%7D%2C%22comm%22%3A%7B%22uin%22%3A%2218585073516%22%2C%22format%22%3A%22json%22%2C%22ct%22%3A24%2C%22cv%22%3A0%7D%7D'
                             $.ajax({
                                 url: url,
@@ -130,6 +131,7 @@
             //点击最新里面的每一项歌曲
             list_song_click(music_data) {
                 console.log(music_data);
+                this.videoUpload.music.url = ''
                 let url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=%7B%22req_0%22%3A%7B%22module%22%3A%22vkey.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%22358840384%22%2C%22songmid%22%3A%5B%22' + music_data.songmid + '%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%221443481947%22%2C%22loginflag%22%3A1%2C%22platform%22%3A%2220%22%7D%7D%2C%22comm%22%3A%7B%22uin%22%3A%2218585073516%22%2C%22format%22%3A%22json%22%2C%22ct%22%3A24%2C%22cv%22%3A0%7D%7D'
                 $.ajax({
                     url: url,
@@ -144,44 +146,46 @@
                         data.sip = res.req_0.data.sip
                         data.purl = res.req_0.data.midurlinfo[0].purl
                         // this.playArray.push(data)
-                        localStorage.setItem('playArray', JSON.stringify(data)) //储存播放地址
-                        JSON.parse(localStorage.getItem('playArray'))
+                        localStorage.setItem('playArray1', JSON.stringify(data)) //储存播放地址
+                        JSON.parse(localStorage.getItem('playArray1'))
                         localStorage.setItem('every_music_data', JSON.stringify(music_data)) //点击播放音乐的一些值
                         // this.$router.push({path:'/play'})
+                        var arrays = []
+
+                        if (music_data.singer.length > 1) {
+                            this.singer_name = ''
+                            for (let i = 0; i < music_data.singer.length; i++) {
+                                var not_last = music_data.singer[i].name + ' / '
+                                arrays.push(not_last)
+                            }
+                            arrays.push(arrays.pop().replace(/[ / ]/g, ''))
+                            for (let j = 0; j < arrays.length; j++) {
+                                this.singer_name += arrays[j]
+                            }
+                        } else {
+                            this.singer_name = music_data.singer[0].name
+                        }
+                        this.videoUpload.music = {
+                            title: music_data.albumname,
+                            author: this.singer_name,
+                            url: JSON.parse(localStorage.getItem('playArray1')).sip[0] + JSON.parse(localStorage.getItem('playArray1')).purl,
+                            pic: 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + music_data.albummid + '.jpg'
+                        }
                     },
                     error: function (error) {
                         console.log(error);
                     }
                 });
                 // this.videoUpload.music.title = music_data.albumname
-                var arrays = []
-                // console.log(this.music_data);
-                if (music_data.singer.length > 1) {
-                    for (let i = 0; i < music_data.singer.length; i++) {
-                        var not_last = music_data.singer[i].name + ' / '
-                        arrays.push(not_last)
-                    }
-                    arrays.push(arrays.pop().replace(/[ / ]/g, ''))
-                    for (let j = 0; j < arrays.length; j++) {
-                        this.singer_name += arrays[j]
-                    }
-                } else {
-                    this.singer_name = music_data.singer[0].name
-                }
-                // this.videoUpload.music.author = this.singer_name
-                // this.videoUpload.music.pic = 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + music_data.albummid + '.jpg'
-                // this.videoUpload.music.url = JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl
 
-                this.videoUpload.music = {
-                    title: music_data.albumname,
-                    artist: this.singer_name,
-                    src: JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl,
-                    pic: 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + music_data.albummid + '.jpg'
-                }
-                this.autoplay = false
-                setTimeout(()=>{
+                // $('audio')[0].src = JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl
+
+
+                // console.log(JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl)
+                // this.autoplay = false
+                // setTimeout(()=>{
                     this.autoplay = true
-                })
+                // })
                 // console.log(JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl);
             },
             // 图片路径
@@ -195,6 +199,7 @@
 <style scoped>
     .new {
         margin-top: 1.4rem;
+        margin-bottom: 1.8rem;
     }
 
     .list ul {
@@ -237,5 +242,10 @@
     .aplayer {
         margin: 0 !important;
         background-color: skyblue;
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 1.8rem;
     }
 </style>
