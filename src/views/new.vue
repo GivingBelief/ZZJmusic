@@ -2,17 +2,17 @@
     <div class="new">
         <tab_bar v-bind:id="0"></tab_bar>
         <div class="list">
-            <ul>
-                <li v-for="(item,index) in albummidArray" :key="index+''" @click="list_song_click(item)">
-                    <div class="border_div">
-                        <img class="albummid_img" :src="getImgUrl(item.albummid)" alt="">
-                    </div>
-                    <span class="overflow_span">{{item.albumname}}</span>
-                </li>
-            </ul>
+<!--            <ul>-->
+<!--                <li v-for="(item,index) in albummidArray" :key="index+''" @click="list_song_click(item)">-->
+<!--                    <div class="border_div">-->
+<!--                        <img class="albummid_img" :src="getImgUrl(item.albummid)" alt="">-->
+<!--                    </div>-->
+<!--                    <span class="overflow_span">{{item.albumname}}</span>-->
+<!--                </li>-->
+<!--            </ul>-->
 
         </div>
-        <aplayer  :music="videoUpload.music" :autoplay='true' ref="player"></aplayer>
+        <aplayer :music="videoUpload.music" :fixed="true" ref="player" :list="musicList"></aplayer>
     </div>
 </template>
 
@@ -29,17 +29,15 @@
         },
         data() {
             return {
-                // autoplay:true,
+                musicList: [],
                 music_data: [],
                 singer_name: '',
                 albummidArray: [], //最新图片数组
                 songmidArray: [],//最新歌曲源数组
                 playArray: [],//当前播放的歌曲数组
                 videoUpload: {
-                    // theme: '#ffc0cb',
-                    // autoplay: true,
                     repeat: 'repeat-one', // 轮播模式。值可以是 'repeat-one'（单曲循环）'repeat-all'（列表循环）或者 'no-repeat'（不循环）。为了好记，还可以使用对应的 'music' 'list' 'none'
-                    mini: false, // 迷你模式
+                    mini: true, // 迷你模式
                     float: true, // 浮动模式。你可以在页面上随意拖放你的播放器
                     music: { // 当前播放的音乐
                         title: '能够成家吗',
@@ -98,12 +96,12 @@
                                     data.purl = res.req_0.data.midurlinfo[0].purl
                                     // this.playArray.push(data)
                                     localStorage.setItem('playArray', JSON.stringify(data)) //储存播放地址
+                                    this.videoUpload.music.url = JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl
                                 },
                                 error: function (error) {
                                     console.log(error);
                                 }
                             })
-                            this.videoUpload.music.url = JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl
 
                         })
                         // 图片路径
@@ -116,15 +114,61 @@
                             res.singer = data.songlist[i].data.singer
                             that.albummidArray.push(res)
                         }
+                        // console.log(this.albummidArray);
                         // 歌曲源路径
                         for (let j = 0; j < data.songlist.length; j++) {
                             that.songmidArray.push(data.songlist[j].data.songmid)
+                        }
+
+                        for (let j = 0; j < data.songlist.length; j++) {
+                            $.ajax({
+                                url: 'https://api.zsfmyz.top/music/song?songmid=' + data.songlist[j].data.songmid + '&guid=126548448',
+                                type: "get",
+                                success: (res) => {
+                                    var suc = {};
+                                    var arrays = []
+                                    if (data.songlist[j].data.singer.length > 1) {
+                                        for (let i = 0; i < data.songlist[j].data.singer.length; i++) {
+                                            var not_last = data.songlist[j].data.singer[i].name + ' / '
+                                            arrays.push(not_last)
+                                            // console.log(arrays.pop().replace(/[ / ]/g, ''));
+                                        }
+                                        arrays.push(arrays.pop().replace(/[ / ]/g, ''))
+                                        // console.log(arrays);
+                                        var name = ''
+                                        for (let z = 0; z < arrays.length; z++) {
+                                            name += arrays[z]
+                                            suc.author = name
+                                        }
+                                    } else {
+                                        suc.author = data.songlist[j].data.singer[0].name
+                                    }
+                                    suc.title = this.albummidArray[j].albumname
+                                    // suc.author = this.albummidArray[j].singer
+                                    suc.url = JSON.parse(res).data.musicUrl
+                                    suc.pic = 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + this.albummidArray[j].albummid + '.jpg'
+                                    this.musicList.push(suc)
+                                    let img = document.createElement("img")
+
+                                    img.setAttribute("class", "newImg");
+                                    for (let w = 0; w< $('ol')[0].childNodes.length; w++) {
+                                        // console.log(data.songlist[w].data.albummid);
+                                        img.src = 'http://y.gtimg.cn/music/photo_new/T002R180x180M000' + data.songlist[w].data.albummid + '.jpg'
+                                        $('ol')[0].childNodes[w].prepend(img)
+                                    }
+
+                                },
+                                error: function (error) {
+                                    console.log(error);
+                                }
+                            });
                         }
                     },
                     error: function (error) {
                         console.log(error);
                     }
                 });
+
             });
         },
         methods: {
@@ -145,7 +189,6 @@
                         var data = {};
                         data.sip = res.req_0.data.sip
                         data.purl = res.req_0.data.midurlinfo[0].purl
-                        // this.playArray.push(data)
                         localStorage.setItem('playArray1', JSON.stringify(data)) //储存播放地址
                         JSON.parse(localStorage.getItem('playArray1'))
                         localStorage.setItem('every_music_data', JSON.stringify(music_data)) //点击播放音乐的一些值
@@ -176,17 +219,7 @@
                         console.log(error);
                     }
                 });
-                // this.videoUpload.music.title = music_data.albumname
-
-                // $('audio')[0].src = JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl
-
-
-                // console.log(JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl)
-                // this.autoplay = false
-                // setTimeout(()=>{
-                    this.autoplay = true
-                // })
-                // console.log(JSON.parse(localStorage.getItem('playArray')).sip[0] + JSON.parse(localStorage.getItem('playArray')).purl);
+                this.autoplay = true
             },
             // 图片路径
             getImgUrl(icon) {
@@ -197,9 +230,9 @@
 </script>
 
 <style scoped>
+
     .new {
         margin-top: 1.4rem;
-        margin-bottom: 1.8rem;
     }
 
     .list ul {
@@ -224,10 +257,7 @@
         margin-bottom: 0.2rem;
     }
 
-    .list ul li .albummid_img {
-        width: 2.667rem;
-        height: 2.667rem;
-    }
+
 
     .list ul li .overflow_span {
         display: inline-block;
@@ -239,13 +269,5 @@
         font-size: 0.5rem;
     }
 
-    .aplayer {
-        margin: 0 !important;
-        background-color: skyblue;
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        height: 1.8rem;
-    }
+
 </style>
